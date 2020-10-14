@@ -56,7 +56,6 @@ function createFeatures(geodata){
     var markers = L.markerClusterGroup();
     var magnitude = [];
     
-    //loop through data to make markers for each earthquake & collapse into marker clusters
     for (var i = 0; i < geodata.length; i++){
         var latlng = geodata[i].geometry.coordinates;
         
@@ -65,11 +64,90 @@ function createFeatures(geodata){
         depth_array.push(geodata[i].geometry.coordinates[2]);
         
     
-        //this adds a marker and builds a marker cluster group for each earthquake
         var m = L.marker([latlng[1], latlng[0]], {title: "test"});
         m.bindPopup("<h3>" + geodata[i].properties.place + "</h3><hr>" + "<h4> Magnitude: " + geodata[i].properties.mag + "</h4>")
         markers.addLayer(m)
     
     
-    }};
+    };
 
+
+
+    var legend = L.control({position: "bottomright"});
+    legend.onAdd = function(){
+      var div = L.domUtil.create("div", "info legend");
+      var depth_limits = depth_array;
+      var colors = depth_colors;
+      var labels = [];
+    
+      var legendInfo = "<h1>Median Income</h1>" +
+        "<div class=\"labels\">" +
+          "<div class=\"min\">" + depth_limits[0] + "</div>" +
+          "<div class=\"max\">" + depth_limits[depth_limits.length - 1] + "</div>" +
+        "</div>";
+  
+        div.innerHTML = legendInfo;
+  
+        depth_limits.forEach(function(depth, index){
+          labels.push("<li style = \"background-color: " + colors[index] + "\"><li>");
+        });
+  
+        div.innerHTML += "<ul>" + labels.join("") + "</ul>";
+        return div
+    }
+    console.log(legend);
+ var leg = L.layerGroup(legend);
+ var mag = L.layerGroup(magnitude);
+
+   createMap(markers, mag, leg);
+ 
+  };
+ 
+ 
+ 
+  function createMap(earthquakes, leg){
+    var streetmap = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+      attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
+      tileSize: 512,
+      maxZoom: 18,
+      zoomOffset: -1,
+      id: "mapbox/streets-v11",
+      accessToken: API_KEY
+    });
+  
+    var piratemap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+      attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+      maxZoom: 18,
+      id: "Pirates",
+      accessToken: API_KEY
+    });
+  
+      var baseMaps = {
+        "Street Map": streetmap,
+        "Pirate Map": piratemap
+      };
+  
+      
+      var overlayMaps = {
+        Earthquakes: earthquakes,
+        "Depth and Magnitude" : depthMag
+  
+      };
+      
+    var myMap = L.map("map", {
+      center: [
+        37.09, -95.71
+      ],
+      zoom: 5,
+      layers: [streetmap, earthquakes]
+    });
+  
+    leg.addTo(myMap);
+    
+    L.control.layers(baseMaps, overlayMaps, {
+      collapsed: false
+    }).addTo(myMap);
+
+  }
+  
+  
